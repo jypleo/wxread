@@ -7,9 +7,9 @@
 该脚本具备以下功能：
 
 - **阅读时长调节**：默认计入排行榜和挑战赛，时长可调节，默认为60分钟。
-- **定时运行推送**：可部署在GitHub Action/服务器上，支持每天定时运行并推送结果到微信。
+- **定时运行推送**：通过 Docker 容器内 cron 定时运行，并支持推送结果。
 - **Cookie自动更新**：脚本能自动获取并更新Cookie，一次部署后面无需其它操作。
-- **轻量化设计**：本脚本实现了轻量化的编写，部署服务器/GIthub action后到点运行，无需额外硬件。
+- **轻量化设计**：本脚本实现了轻量化的编写，部署到 Docker 后到点运行，无需额外硬件。
 
 ***
 ## 操作步骤 🛠️
@@ -26,53 +26,73 @@
 ```
 右键复制为Bash格式。
 
-### 方法一： GitHub Action部署运行（GitHub运行）
+### Docker 部署运行
 
+本项目运行参数统一从 Docker 挂载目录里的配置文件读取，不再使用 GitHub Actions Secrets/Variables 运行脚本。
 
-- Fork这个仓库，在仓库 **Settings** -> 左侧列表中的 **Secrets and variables** -> **Actions**，然后在右侧的 **Repository secrets** 中添加如下值：
-  - `WXREAD_CURL_BASH`：上面抓read接口后转换为curl_bash的数据。
-  - `PUSH_METHOD`：推送方法，5选1推送方式（pushplus、wxpusher、telegram、serverChan、gotify）。
-  - `PUSHPLUS_TOKEN` or `WXPUSHER_SPT` or `TELEGRAM_BOT_TOKEN`&`TELEGRAM_CHAT_ID` or `SERVERCHAN_SPT` or `GOTIFY_URL`&`GOTIFY_TOKEN`: 选择推送后填写对应token。
-  
-- 在 **Variables** 部分，最下方添加变量：
-  - `READ_NUM`：设定每次阅读的目标次数。
-  - `GOTIFY_PRIORITY`：Gotify 消息优先级，可选，默认 5。
+steps1：克隆项目：
 
+```bash
+git clone https://github.com/findmover/wxread.git
+cd wxread
+```
 
-- 基本释义：
+steps2：创建本地配置文件：
+
+```bash
+mkdir -p config logs
+cp config/config.example.json config/config.json
+```
+
+编辑 `config/config.json`，至少填入 `WXREAD_CURL_BASH`。需要推送时再配置 `PUSH_METHOD` 和对应渠道参数。
+
+steps3：构建并启动容器：
+
+```bash
+docker rm -f wxread
+docker build -t wxread .
+docker run -d --name wxread \
+  -v $(pwd)/config:/app/config \
+  -v $(pwd)/logs:/app/logs \
+  --restart always \
+  wxread
+```
+
+steps4：手动测试：
+
+```bash
+docker exec -it wxread python /app/main.py
+```
+
+容器默认每天北京时间凌晨 1 点自动运行，日志写入挂载目录 `logs/`。
+
+### 配置文件说明
+
+配置文件路径：
+
+- Docker 容器内：`/app/config/config.json`
+- 仓库本地运行：`config/config.json`
+
+字段说明：
 
 | key                        | Value                               | 说明                                                         | 属性      |
 | ------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------- |
-| `WXREAD_CURL_BASH`         | `read` 接口 `curl_bash`数据 | **必填**，必须提供有效指令                                   | secrets   |
-| `READ_NUM`                 | 阅读次数（每次 30 秒）              | **可选**，阅读时长，默认 20 分钟                           | variables |
-| `PUSH_METHOD`              | `pushplus`/`wxpusher`/`telegram`/`serverchan`/`gotify`    | **可选**，推送方式，5选1，默认不推送                                       |    secrets     |
-| `PUSHPLUS_TOKEN`           | PushPlus 的 token                   | 当 `PUSH_METHOD=pushplus` 时必填，[获取地址](https://www.pushplus.plus/uc.html) | secrets   |
-| `WXPUSHER_SPT`             | WxPusher 的token                    | 当 `PUSH_METHOD=wxpusher` 时必填，[获取地址](https://wxpusher.zjiecode.com/docs/#/?id=获取spt) | secrets   |
-| `TELEGRAM_BOT_TOKEN`  <br>`TELEGRAM_CHAT_ID`   <br>`http_proxy`/`https_proxy`（可选）| 群组id以及机器人token                 | 当 `PUSH_METHOD=telegram` 时必填，[配置文档](https://www.nodeseek.com/post-22475-1) | secrets   |
-| `SERVERCHAN_SPT`          | serverchan 的 SendKey               | 当 `PUSH_METHOD=serverchan` 时必填，[获取地址](https://sct.ftqq.com/sendkey) | secrets   |
-| `GOTIFY_URL` <br>`GOTIFY_TOKEN` <br>`GOTIFY_PRIORITY`（可选）          | Gotify 服务地址、应用 token、消息优先级               | 当 `PUSH_METHOD=gotify` 时 `GOTIFY_URL` 和 `GOTIFY_TOKEN` 必填，`GOTIFY_PRIORITY` 默认 5 | secrets / variables   |
+| `WXREAD_CURL_BASH`         | `read` 接口 `curl_bash` 数据 | **必填**，必须提供有效指令                                   | string   |
+| `READ_NUM`                 | 阅读次数（每次 30 秒）              | **可选**，阅读时长，默认 40 次 / 20 分钟                           | number |
+| `PUSH_METHOD`              | `pushplus`/`wxpusher`/`telegram`/`serverchan`/`gotify`    | **可选**，推送方式，5选1，默认不推送                                       | string     |
+| `PUSHPLUS_TOKEN`           | PushPlus 的 token                   | 当 `PUSH_METHOD=pushplus` 时必填，[获取地址](https://www.pushplus.plus/uc.html) | string   |
+| `WXPUSHER_SPT`             | WxPusher 的 token                    | 当 `PUSH_METHOD=wxpusher` 时必填，[获取地址](https://wxpusher.zjiecode.com/docs/#/?id=获取spt) | string   |
+| `TELEGRAM_BOT_TOKEN`  <br>`TELEGRAM_CHAT_ID`   <br>`http_proxy`/`https_proxy`（可选）| 群组 id、机器人 token、代理                 | 当 `PUSH_METHOD=telegram` 时 bot token 和 chat id 必填，[配置文档](https://www.nodeseek.com/post-22475-1) | string   |
+| `SERVERCHAN_SPT`          | serverchan 的 SendKey               | 当 `PUSH_METHOD=serverchan` 时必填，[获取地址](https://sct.ftqq.com/sendkey) | string   |
+| `GOTIFY_URL` <br>`GOTIFY_TOKEN` <br>`GOTIFY_PRIORITY`（可选）          | Gotify 服务地址、应用 token、消息优先级               | 当 `PUSH_METHOD=gotify` 时 `GOTIFY_URL` 和 `GOTIFY_TOKEN` 必填，`GOTIFY_PRIORITY` 默认 5 | string / number   |
+| `headers` <br>`cookies`          | 抓包转换后的 headers、cookies               | 可选。如果不使用 `WXREAD_CURL_BASH`，可以直接配置这两个字段 | object   |
+| `data`          | read 接口请求体字段               | 可选。阅读时间异常时可按需覆盖默认 data 字段 | object   |
 
-**重要：除了 `READ_NUM` 和可选的 `GOTIFY_PRIORITY` 配置在 Variables，其它配置都放在 Secrets；需要推送时 `PUSH_METHOD` 是必填的。**
-
-### 视频教程
-
-[![视频教程](https://github.com/user-attachments/assets/ec144869-3dbb-40fe-9bc5-f8bf1b5fce3c)](https://www.bilibili.com/video/BV1kJ6gY3En3/ "点击查看视频")
-
-
-### 方法二： 服务器运行（docker部署）
-
-- 在你的服务器上有Python运行环境即可，使用`cron`定义自动运行。
-- 或者通过docker运行，将抓到的bash命令在 [Convert](https://curlconverter.com/python/) 转化为Python字典格式，复制需要的headers与cookies即可（data不需要）。
-
-steps1：克隆这个项目：`git clone https://github.com/findmover/wxread.git`<br>
-steps2：配置config.py里的headers、cookies、READ_NUM、PUSH_METHOD以及对应推送方式token<br>
-steps3：进入目录使用镜像构建容器：
-`docker rm -f wxread && docker build -t wxread . && docker run -d --name wxread -v $(pwd)/logs:/app/logs --restart always wxread`<br>
-steps4：测试：`docker exec -it wxread python /app/main.py`
+`config/config.json` 包含个人 Cookie 和推送 token，已加入 `.gitignore`，不要提交到 GitHub。
 
 ### Docker 镜像自动构建
 
-项目已添加 GitHub Actions 镜像构建流程，代码 push 到 GitHub 后会自动构建镜像并推送到 GitHub Container Registry：
+项目保留 GitHub Actions 镜像构建流程。代码 push 到 GitHub 后只构建并推送 Docker 镜像，不在 GitHub Actions 中运行阅读脚本：
 
 ```bash
 ghcr.io/<你的 GitHub 用户名或组织>/<仓库名>:latest
@@ -91,9 +111,8 @@ ghcr.io/<你的 GitHub 用户名或组织>/<仓库名>:latest
 docker pull ghcr.io/<你的 GitHub 用户名或组织>/<仓库名>:latest
 docker rm -f wxread
 docker run -d --name wxread \
+  -v $(pwd)/config:/app/config \
   -v $(pwd)/logs:/app/logs \
-  -e WXREAD_CURL_BASH='你的 curl bash 内容' \
-  -e READ_NUM='40' \
   --restart always \
   ghcr.io/<你的 GitHub 用户名或组织>/<仓库名>:latest
 ```
@@ -103,11 +122,11 @@ docker run -d --name wxread \
 
 1. **签到次数调整**：只需签到完成挑战赛可以将`num`次数从120调整为2，每次`num`为30秒，200即100分钟。
    
-2. **解决阅读时间问题**：对于issue中提出的“阅读时间没有增加”，“增加时间与刷的时间不对等”建议保留`config.py`中的【data】字段，默认阅读三体，其它书籍自行测试。
+2. **解决阅读时间问题**：对于issue中提出的“阅读时间没有增加”，“增加时间与刷的时间不对等”建议保留默认【data】字段；如需调整，可在 `config/config.json` 的 `data` 字段覆盖。
 
-3. **GitHub Action部署/本地部署**：主要配置config.py即可，Action部署使用环境变量，本地部署修改config.py里的阅读次数、headers、cookies即可。
+3. **Docker部署**：主要配置 `config/config.json`，容器启动时挂载到 `/app/config`。
 
-4. **推送**：pushplus推送偶尔出问题，猜测是GitHub action环境问题，增加重试机制。并增加wxpusher的极简推送方式。
+4. **推送**：pushplus、wxpusher、telegram、serverchan、gotify 均支持重试机制。
 
 
 ***

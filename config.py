@@ -1,33 +1,67 @@
 # config.py 自定义配置,包括阅读次数、推送token的填写
-import os
+import json
 import re
+from pathlib import Path
 
 """
-可修改区域
-默认使用本地值如果不存在从环境变量中获取值
+运行配置
+默认读取 Docker 挂载目录 /app/config/config.json，本地运行时读取 ./config/config.json
 """
+
+CONFIG_PATHS = (
+    Path("/app/config/config.json"),
+    Path(__file__).resolve().parent / "config" / "config.json",
+)
+
+
+def load_runtime_config():
+    for config_path in CONFIG_PATHS:
+        if config_path.is_file():
+            with config_path.open("r", encoding="utf-8") as config_file:
+                loaded_config = json.load(config_file)
+                return loaded_config if isinstance(loaded_config, dict) else {}
+    return {}
+
+
+runtime_config = load_runtime_config()
+
+
+def get_config(key, default=None):
+    value = runtime_config.get(key, default)
+    return default if value is None else value
+
+
+def get_int_config(key, default):
+    value = get_config(key, default)
+    if value in (None, ""):
+        return default
+    return int(value)
+
 
 # 阅读次数 默认40次/20分钟
-READ_NUM = int(os.getenv('READ_NUM') or 40)
+READ_NUM = get_int_config("READ_NUM", 40)
 # 需要推送时可选，可选pushplus、wxpusher、telegram、serverchan、gotify
-PUSH_METHOD = "" or os.getenv('PUSH_METHOD')
+PUSH_METHOD = get_config("PUSH_METHOD", "")
 # pushplus推送时需填
-PUSHPLUS_TOKEN = "" or os.getenv("PUSHPLUS_TOKEN")
+PUSHPLUS_TOKEN = get_config("PUSHPLUS_TOKEN", "")
 # telegram推送时需填
-TELEGRAM_BOT_TOKEN = "" or os.getenv("TELEGRAM_BOT_TOKEN")
-TELEGRAM_CHAT_ID = "" or os.getenv("TELEGRAM_CHAT_ID")
+TELEGRAM_BOT_TOKEN = get_config("TELEGRAM_BOT_TOKEN", "")
+TELEGRAM_CHAT_ID = get_config("TELEGRAM_CHAT_ID", "")
 # wxpusher推送时需填
-WXPUSHER_SPT = "" or os.getenv("WXPUSHER_SPT")
+WXPUSHER_SPT = get_config("WXPUSHER_SPT", "")
 # SeverChan推送时需填
-SERVERCHAN_SPT = "" or os.getenv("SERVERCHAN_SPT")
+SERVERCHAN_SPT = get_config("SERVERCHAN_SPT", "")
 # Gotify推送时需填
-GOTIFY_URL = "" or os.getenv("GOTIFY_URL")
-GOTIFY_TOKEN = "" or os.getenv("GOTIFY_TOKEN")
-GOTIFY_PRIORITY = int(os.getenv("GOTIFY_PRIORITY") or 5)
+GOTIFY_URL = get_config("GOTIFY_URL", "")
+GOTIFY_TOKEN = get_config("GOTIFY_TOKEN", "")
+GOTIFY_PRIORITY = get_int_config("GOTIFY_PRIORITY", 5)
+# Telegram代理，可选
+HTTP_PROXY = get_config("http_proxy", get_config("HTTP_PROXY", ""))
+HTTPS_PROXY = get_config("https_proxy", get_config("HTTPS_PROXY", ""))
 
 
-# read接口的bash命令，本地部署时可对应替换headers、cookies
-curl_str = os.getenv('WXREAD_CURL_BASH')
+# read接口的bash命令，也可以改用配置文件里的headers、cookies字段
+curl_str = get_config("WXREAD_CURL_BASH", "")
 
 # headers、cookies是一个省略模版，本地或者docker部署时对应替换
 cookies = {
@@ -119,4 +153,25 @@ def convert(curl_command):
     return headers, cookies
 
 
-headers, cookies = convert(curl_str) if curl_str else (headers, cookies)
+configured_data = get_config("data", {})
+if isinstance(configured_data, dict):
+    data.update(configured_data)
+
+configured_book = get_config("book", [])
+if isinstance(configured_book, list) and configured_book:
+    book = configured_book
+
+configured_chapter = get_config("chapter", [])
+if isinstance(configured_chapter, list) and configured_chapter:
+    chapter = configured_chapter
+
+configured_headers = get_config("headers", get_config("HEADERS", {}))
+configured_cookies = get_config("cookies", get_config("COOKIES", {}))
+
+if curl_str:
+    headers, cookies = convert(curl_str)
+else:
+    if isinstance(configured_headers, dict) and configured_headers:
+        headers = configured_headers
+    if isinstance(configured_cookies, dict) and configured_cookies:
+        cookies = configured_cookies

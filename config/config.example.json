@@ -1,0 +1,18 @@
+{
+  "WXREAD_CURL_BASH": "curl 'https://weread.qq.com/web/book/read' -H 'Cookie: key=value; wr_skey=xxxx' -H 'User-Agent: Mozilla/5.0' --data-raw '{}'",
+  "READ_NUM": 40,
+  "PUSH_METHOD": "",
+  "PUSHPLUS_TOKEN": "",
+  "WXPUSHER_SPT": "",
+  "TELEGRAM_BOT_TOKEN": "",
+  "TELEGRAM_CHAT_ID": "",
+  "http_proxy": "",
+  "https_proxy": "",
+  "SERVERCHAN_SPT": "",
+  "GOTIFY_URL": "",
+  "GOTIFY_TOKEN": "",
+  "GOTIFY_PRIORITY": 5,
+  "headers": {},
+  "cookies": {},
+  "data": {}
+}

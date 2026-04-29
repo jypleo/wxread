@@ -8,3 +8,7 @@ logs/
 
 # Local Codex rules
 AGENTS.md
+
+# Local runtime config with secrets
+config/config.json
+config/*.local.json

@@ -1,6 +1,5 @@
 import json
 import logging
-import os
 import random
 import time
 
@@ -10,6 +9,8 @@ from config import (
     GOTIFY_PRIORITY,
     GOTIFY_TOKEN,
     GOTIFY_URL,
+    HTTP_PROXY,
+    HTTPS_PROXY,
     PUSHPLUS_TOKEN,
     SERVERCHAN_SPT,
     TELEGRAM_BOT_TOKEN,
@@ -28,8 +29,9 @@ class PushNotification:
         self.wxpusher_simple_url = "https://wxpusher.zjiecode.com/api/send/message/{}/{}"
         self.headers = {"Content-Type": "application/json"}
         self.proxies = {
-            "http": os.getenv("http_proxy"),
-            "https": os.getenv("https_proxy"),
+            key: value
+            for key, value in {"http": HTTP_PROXY, "https": HTTPS_PROXY}.items()
+            if value
         }
 
     def push_pushplus(self, content, token):
