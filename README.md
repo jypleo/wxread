@@ -68,6 +68,34 @@ steps3：进入目录使用镜像构建容器：
 `docker rm -f wxread && docker build -t wxread . && docker run -d --name wxread -v $(pwd)/logs:/app/logs --restart always wxread`<br>
 steps4：测试：`docker exec -it wxread python /app/main.py`
 
+### Docker 镜像自动构建
+
+项目已添加 GitHub Actions 镜像构建流程，代码 push 到 GitHub 后会自动构建镜像并推送到 GitHub Container Registry：
+
+```bash
+ghcr.io/<你的 GitHub 用户名或组织>/<仓库名>:latest
+```
+
+- push 到任意分支会生成对应分支 tag。
+- push `v*` 格式的 tag 会生成版本镜像。
+- Pull Request 只验证构建，不推送镜像。
+- 默认分支会额外推送 `latest` tag。
+
+如果镜像无法推送，请在仓库 **Settings** -> **Actions** -> **General** 中确认 `Workflow permissions` 允许 GitHub Actions 写入 packages。
+
+拉取并运行镜像示例：
+
+```bash
+docker pull ghcr.io/<你的 GitHub 用户名或组织>/<仓库名>:latest
+docker rm -f wxread
+docker run -d --name wxread \
+  -v $(pwd)/logs:/app/logs \
+  -e WXREAD_CURL_BASH='你的 curl bash 内容' \
+  -e READ_NUM='40' \
+  --restart always \
+  ghcr.io/<你的 GitHub 用户名或组织>/<仓库名>:latest
+```
+
 ***
 ## Attention 📢
 
@@ -100,5 +128,4 @@ steps4：测试：`docker exec -it wxread python /app/main.py`
 | `ps` | `"xxxxxxxxxxxxxxxxxxxxxxxx"` | 用户标识符或会话标识符，用于追踪用户或会话。 |
 | `pc` | `"xxxxxxxxxxxxxxxxxxxxxxxx"` | 设备标识符或客户端标识符，用于标识用户的设备或客户端。 |
 | `s` | `"fadcb9de"` | 校验和或哈希值，用于验证请求数据的完整性。 |
-
 
