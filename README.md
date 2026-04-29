@@ -58,6 +58,13 @@ docker run -d --name wxread \
   wxread
 ```
 
+也可以使用 Docker Compose：
+
+```bash
+cp docker-compose.example.yml docker-compose.yml
+docker compose up -d
+```
+
 steps4：手动测试：
 
 ```bash

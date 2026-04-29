@@ -1,0 +1,8 @@
+services:
+  wxread:
+    container_name: wxread
+    image: ghcr.io/jypleo/wxread:latest
+    restart: always
+    volumes:
+      - ./config:/app/config
+      - ./logs:/app/logs
