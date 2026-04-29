@@ -1,0 +1,4 @@
+curl 'https://weread.qq.com/web/book/read' \
+  -H 'Cookie: key=value; wr_skey=xxxx' \
+  -H 'User-Agent: Mozilla/5.0' \
+  --data-raw '{}'

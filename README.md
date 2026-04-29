@@ -42,9 +42,10 @@ steps2：创建本地配置文件：
 ```bash
 mkdir -p config logs
 cp config/config.example.json config/config.json
+cp config/wxread_curl_bash.example.txt config/wxread_curl_bash.txt
 ```
 
-编辑 `config/config.json`，至少填入 `WXREAD_CURL_BASH`。需要推送时再配置 `PUSH_METHOD` 和对应渠道参数。
+编辑 `config/wxread_curl_bash.txt`，填入抓包复制出的完整 curl bash 命令。需要推送时再编辑 `config/config.json`，配置 `PUSH_METHOD` 和对应渠道参数。
 
 steps3：构建并启动容器：
 
@@ -77,14 +78,22 @@ docker exec -it wxread python /app/main.py
 
 配置文件路径：
 
-- Docker 容器内：`/app/config/config.json`
-- 仓库本地运行：`config/config.json`
+- Docker 容器内：`/app/config/config.json` 和 `/app/config/wxread_curl_bash.txt`
+- 仓库本地运行：`config/config.json` 和 `config/wxread_curl_bash.txt`
+
+`wxread_curl_bash.txt` 内容示例：
+
+```bash
+curl 'https://weread.qq.com/web/book/read' \
+  -H 'Cookie: key=value; wr_skey=xxxx' \
+  -H 'User-Agent: Mozilla/5.0' \
+  --data-raw '{}'
+```
 
 字段说明：
 
 | key                        | Value                               | 说明                                                         | 属性      |
 | ------------------------- | ---------------------------------- | ------------------------------------------------------------ | --------- |
-| `WXREAD_CURL_BASH`         | `read` 接口 `curl_bash` 数据 | **必填**，必须提供有效指令                                   | string   |
 | `READ_NUM`                 | 阅读次数（每次 30 秒）              | **可选**，阅读时长，默认 40 次 / 20 分钟                           | number |
 | `PUSH_METHOD`              | `pushplus`/`wxpusher`/`telegram`/`serverchan`/`gotify`    | **可选**，推送方式，5选1，默认不推送                                       | string     |
 | `PUSHPLUS_TOKEN`           | PushPlus 的 token                   | 当 `PUSH_METHOD=pushplus` 时必填，[获取地址](https://www.pushplus.plus/uc.html) | string   |
@@ -92,10 +101,10 @@ docker exec -it wxread python /app/main.py
 | `TELEGRAM_BOT_TOKEN`  <br>`TELEGRAM_CHAT_ID`   <br>`http_proxy`/`https_proxy`（可选）| 群组 id、机器人 token、代理                 | 当 `PUSH_METHOD=telegram` 时 bot token 和 chat id 必填，[配置文档](https://www.nodeseek.com/post-22475-1) | string   |
 | `SERVERCHAN_SPT`          | serverchan 的 SendKey               | 当 `PUSH_METHOD=serverchan` 时必填，[获取地址](https://sct.ftqq.com/sendkey) | string   |
 | `GOTIFY_URL` <br>`GOTIFY_TOKEN` <br>`GOTIFY_PRIORITY`（可选）          | Gotify 服务地址、应用 token、消息优先级               | 当 `PUSH_METHOD=gotify` 时 `GOTIFY_URL` 和 `GOTIFY_TOKEN` 必填，`GOTIFY_PRIORITY` 默认 5 | string / number   |
-| `headers` <br>`cookies`          | 抓包转换后的 headers、cookies               | 可选。如果不使用 `WXREAD_CURL_BASH`，可以直接配置这两个字段 | object   |
+| `headers` <br>`cookies`          | 抓包转换后的 headers、cookies               | 可选。如果不使用 `wxread_curl_bash.txt`，可以直接配置这两个字段 | object   |
 | `data`          | read 接口请求体字段               | 可选。阅读时间异常时可按需覆盖默认 data 字段 | object   |
 
-`config/config.json` 包含个人 Cookie 和推送 token，已加入 `.gitignore`，不要提交到 GitHub。
+`config/config.json` 和 `config/wxread_curl_bash.txt` 包含个人 Cookie 或推送 token，已加入 `.gitignore`，不要提交到 GitHub。
 
 ### Docker 镜像自动构建
 

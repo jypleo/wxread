@@ -13,6 +13,11 @@ CONFIG_PATHS = (
     Path(__file__).resolve().parent / "config" / "config.json",
 )
 
+CURL_COMMAND_PATHS = (
+    Path("/app/config/wxread_curl_bash.txt"),
+    Path(__file__).resolve().parent / "config" / "wxread_curl_bash.txt",
+)
+
 
 def load_runtime_config():
     for config_path in CONFIG_PATHS:
@@ -38,6 +43,13 @@ def get_int_config(key, default):
     return int(value)
 
 
+def load_curl_command():
+    for curl_path in CURL_COMMAND_PATHS:
+        if curl_path.is_file():
+            return curl_path.read_text(encoding="utf-8").strip()
+    return ""
+
+
 # 阅读次数 默认40次/20分钟
 READ_NUM = get_int_config("READ_NUM", 40)
 # 需要推送时可选，可选pushplus、wxpusher、telegram、serverchan、gotify
@@ -61,7 +73,7 @@ HTTPS_PROXY = get_config("https_proxy", get_config("HTTPS_PROXY", ""))
 
 
 # read接口的bash命令，也可以改用配置文件里的headers、cookies字段
-curl_str = get_config("WXREAD_CURL_BASH", "")
+curl_str = load_curl_command()
 
 # headers、cookies是一个省略模版，本地或者docker部署时对应替换
 cookies = {

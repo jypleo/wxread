@@ -9,3 +9,5 @@ logs/
 AGENTS.md
 config/config.json
 config/*.local.json
+config/wxread_curl_bash.txt
+config/*.secret.txt

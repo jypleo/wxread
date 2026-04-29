@@ -12,6 +12,8 @@ AGENTS.md
 # Local runtime config with secrets
 config/config.json
 config/*.local.json
+config/wxread_curl_bash.txt
+config/*.secret.txt
 
 # Local Docker Compose overrides
 docker-compose.yml
