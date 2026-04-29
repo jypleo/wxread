@@ -9,7 +9,7 @@ import re
 
 # 阅读次数 默认40次/20分钟
 READ_NUM = int(os.getenv('READ_NUM') or 40)
-# 需要推送时可选，可选pushplus、wxpusher、telegram
+# 需要推送时可选，可选pushplus、wxpusher、telegram、serverchan、gotify
 PUSH_METHOD = "" or os.getenv('PUSH_METHOD')
 # pushplus推送时需填
 PUSHPLUS_TOKEN = "" or os.getenv("PUSHPLUS_TOKEN")
@@ -20,6 +20,10 @@ TELEGRAM_CHAT_ID = "" or os.getenv("TELEGRAM_CHAT_ID")
 WXPUSHER_SPT = "" or os.getenv("WXPUSHER_SPT")
 # SeverChan推送时需填
 SERVERCHAN_SPT = "" or os.getenv("SERVERCHAN_SPT")
+# Gotify推送时需填
+GOTIFY_URL = "" or os.getenv("GOTIFY_URL")
+GOTIFY_TOKEN = "" or os.getenv("GOTIFY_TOKEN")
+GOTIFY_PRIORITY = int(os.getenv("GOTIFY_PRIORITY") or 5)
 
 
 # read接口的bash命令，本地部署时可对应替换headers、cookies

@@ -7,6 +7,9 @@ import time
 import requests
 
 from config import (
+    GOTIFY_PRIORITY,
+    GOTIFY_TOKEN,
+    GOTIFY_URL,
     PUSHPLUS_TOKEN,
     SERVERCHAN_SPT,
     TELEGRAM_BOT_TOKEN,
@@ -41,6 +44,37 @@ class PushNotification:
                 return True
             except requests.exceptions.RequestException as exc:
                 logger.error("PushPlus 推送失败: %s", exc)
+                if attempt < attempts - 1:
+                    sleep_time = random.randint(180, 360)
+                    logger.info("%d 秒后重试...", sleep_time)
+                    time.sleep(sleep_time)
+        return False
+
+    def push_gotify(self, content, gotify_url, token, priority):
+        if not gotify_url or not token:
+            logger.error("Gotify 推送失败: GOTIFY_URL 或 GOTIFY_TOKEN 未配置")
+            return False
+
+        attempts = 5
+        url = f"{gotify_url.rstrip('/')}/message"
+        title = "微信阅读推送"
+        if "自动阅读完成" not in content:
+            title = "微信阅读失败"
+        payload = {"title": title, "message": content, "priority": priority}
+
+        for attempt in range(attempts):
+            try:
+                response = requests.post(
+                    url,
+                    params={"token": token},
+                    json=payload,
+                    timeout=10,
+                )
+                response.raise_for_status()
+                logger.info("Gotify 响应: %s", response.text)
+                return True
+            except requests.exceptions.RequestException as exc:
+                logger.error("Gotify 推送失败: %s", exc)
                 if attempt < attempts - 1:
                     sleep_time = random.randint(180, 360)
                     logger.info("%d 秒后重试...", sleep_time)
@@ -129,6 +163,8 @@ def push(content, method):
         return notifier.push_wxpusher(content, WXPUSHER_SPT)
     if method == "serverchan":
         return notifier.push_serverChan(content, SERVERCHAN_SPT)
+    if method == "gotify":
+        return notifier.push_gotify(content, GOTIFY_URL, GOTIFY_TOKEN, GOTIFY_PRIORITY)
 
-    logger.warning("无效的通知渠道 '%s'，已跳过推送。支持：pushplus、telegram、wxpusher、serverchan", method)
+    logger.warning("无效的通知渠道 '%s'，已跳过推送。支持：pushplus、telegram、wxpusher、serverchan、gotify", method)
     return False
